@@ -1,0 +1,16 @@
+{
+  "mariadb-economy": {
+    "type": "http",
+    "url": "http://10.111.71.145:8000/mcp"
+  },
+  "tesks": {
+    "type": "http",
+    "url": "https://tesks.dev.paradaux.io/mcp",
+    "bearer_token_env_var": "TESKS_MCP_TOKEN"
+  },
+  "keycloak": {
+    "type": "stdio",
+    "command": "python3",
+    "args": ["${DOTAGENTS_ROOT}/mcp/keycloak.py"]
+  }
+}

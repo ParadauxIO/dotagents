@@ -5,10 +5,11 @@ set -eo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: bash install.sh [--agent all|claude|codex] [--uninstall] [--dry-run]
+Usage: bash install.sh [--agent all|claude|codex] [--with-mcp] [--uninstall] [--dry-run]
 
 Defaults to installing for both agents. Existing unrelated files are never replaced.
 Environment: DOTAGENTS_CLAUDE_SKILLS_DIR, DOTAGENTS_CODEX_SKILLS_DIR
+--with-mcp also merges MCP configuration (requires Python 3.11+).
 EOF
 }
 
@@ -16,6 +17,7 @@ die() { printf 'dotagents: %s\n' "$*" >&2; exit 1; }
 agent=all
 uninstall=false
 dry_run=false
+with_mcp=false
 while (($#)); do
   case "$1" in
     --agent)
@@ -23,6 +25,7 @@ while (($#)); do
       agent=$2; shift 2 ;;
     --uninstall) uninstall=true; shift ;;
     --dry-run) dry_run=true; shift ;;
+    --with-mcp) with_mcp=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
@@ -69,6 +72,13 @@ for target in "${targets[@]}"; do
     done
   fi
 done
+
+if "$with_mcp"; then
+  mcp_args=(--agent "$agent")
+  if "$uninstall"; then mcp_args+=(--uninstall); fi
+  if "$dry_run"; then mcp_args+=(--dry-run); fi
+  python3 "$root/mcp/install.py" "${mcp_args[@]}"
+fi
 
 for target in "${targets[@]}"; do
   # Only remove exact links this checkout could have created, including stale links.

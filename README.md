@@ -4,28 +4,31 @@ A shared, globally installed toolkit for Claude Code and Codex. This Git reposit
 is the source of truth: author a skill once in `skills/`, and the installer links it
 into each agent's native personal skills directory.
 
-The initial repository contains **no skills, hooks, MCP servers, or agent prompts**.
-Installing it now succeeds without adding any capabilities. This is a Git-based
+The repository contains **no skills, hooks, or agent prompts**. It includes shared
+MCP setup for MariaDB Economy, Tesks, and Keycloak. This is a Git-based
 toolkit scaffold, not a marketplace plugin; neither agent's plugin manager is
 required.
 
 ## Install
 
-Requires Git and Bash on macOS, Linux, or WSL. Installation is per user and applies
-across that user's local projects; it requires no `sudo`. Since this repository is
+Requires Git, Bash, and Python 3.11+ on macOS, Linux, or WSL. Installation is per
+user and applies across that user's local projects; it requires no `sudo`. Since this repository is
 private, authenticate with GitHub first (for example, `gh auth login`).
 
 ```bash
 gh repo clone paradauxio/dotagents "$HOME/.local/share/dotagents"
-bash "$HOME/.local/share/dotagents/install.sh"
+bash "$HOME/.local/share/dotagents/install.sh" --with-mcp
 ```
 
 Alternatively, clone with an SSH key that has access to the repository:
 
 ```bash
 git clone git@github.com:paradauxio/dotagents.git "$HOME/.local/share/dotagents"
-bash "$HOME/.local/share/dotagents/install.sh"
+bash "$HOME/.local/share/dotagents/install.sh" --with-mcp
 ```
+
+Complete the [MCP credential and Keycloak setup](mcp/README.md) after installation.
+Omit `--with-mcp` for skills only (which needs only Bash).
 
 Keep the checkout at that location: installed skills are symlinks to it. Once
 skills have been added, start a new agent session to confirm discovery.
@@ -55,7 +58,7 @@ where links are written; they do not configure an agent to discover a new path.
 
 ```bash
 git -C "$HOME/.local/share/dotagents" pull --ff-only
-bash "$HOME/.local/share/dotagents/install.sh"
+bash "$HOME/.local/share/dotagents/install.sh" --with-mcp
 ```
 
 Existing skill edits are visible through their links. Rerunning the installer
@@ -67,10 +70,12 @@ conflicts manually; there is deliberately no overwrite flag.
 ## Uninstall
 
 ```bash
-bash "$HOME/.local/share/dotagents/install.sh" --uninstall
+bash "$HOME/.local/share/dotagents/install.sh" --with-mcp --uninstall
 ```
 
-This removes only links pointing to this checkout's skill directories, including
+For MCP, this removes only unchanged entries installed by dotagents; see
+[MCP setup](mcp/README.md) for ownership and backup behavior. For skills, it removes
+only links pointing to this checkout's skill directories, including
 links whose source was deleted. Your checkout, other skills, agent settings, and
 destination directories are retained. `--agent` and `--dry-run` also work with
 `--uninstall`. Use the same destination overrides as installation, if any.
@@ -97,7 +102,8 @@ shellcheck install.sh
 python3 -m unittest discover -s tests -v
 ```
 
-Python 3 and ShellCheck are development dependencies only. GitHub Actions runs
+Python 3.11+ is required for MCP installation and testing; ShellCheck is a
+development dependency only. GitHub Actions runs
 installer integration tests on Linux and macOS, plus ShellCheck on Linux, on pushes
 and pull requests. Tests use disposable checkouts and temporary homes; no installed
 agent or API key is needed. They cover empty installs, both agents, repeat installs,
