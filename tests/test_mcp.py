@@ -39,10 +39,10 @@ class MCPTests(unittest.TestCase):
         self.run_install()
         claude = json.loads(self.claude.read_text())["mcpServers"]
         codex = tomllib.loads(self.codex.read_text())["mcp_servers"]
-        self.assertEqual(set(claude), {"mariadb-economy", "tesks", "keycloak"})
+        self.assertEqual(set(claude), {"mariadb-economy", "tasklie", "keycloak"})
         self.assertEqual(set(claude), set(codex))
-        self.assertEqual(claude["tesks"]["headers"]["Authorization"], "Bearer ${TESKS_MCP_TOKEN}")
-        self.assertEqual(codex["tesks"]["bearer_token_env_var"], "TESKS_MCP_TOKEN")
+        self.assertEqual(claude["tasklie"]["headers"]["Authorization"], "Bearer ${TASKLIE_MCP_TOKEN}")
+        self.assertEqual(codex["tasklie"]["bearer_token_env_var"], "TASKLIE_MCP_TOKEN")
         self.assertEqual(codex["keycloak"]["args"], [str(ROOT / "mcp/keycloak.py")])
         before = [p.read_text() for p in (self.claude, self.codex, self.state)]
         self.run_install()
@@ -52,15 +52,15 @@ class MCPTests(unittest.TestCase):
 
     def test_existing_servers_and_settings_preserved_with_backups(self):
         previous = {"projects": {"/example": {"trusted": True}}, "mcpServers": {
-            "tesks": {"type": "http", "url": "https://local.example/mcp",
+            "tasklie": {"type": "http", "url": "https://local.example/mcp",
                       "headers": {"Authorization": "test-only-secret"}}}}
         self.claude.write_text(json.dumps(previous))
         self.codex.parent.mkdir()
-        original = '# keep comment\nmodel = "test-model"\n[mcp_servers.tesks]\nurl = "https://local.example/mcp"\n'
+        original = '# keep comment\nmodel = "test-model"\n[mcp_servers.tasklie]\nurl = "https://local.example/mcp"\n'
         self.codex.write_text(original)
         self.run_install()
         self.assertEqual(json.loads(self.claude.read_text())["projects"], previous["projects"])
-        self.assertEqual(json.loads(self.claude.read_text())["mcpServers"]["tesks"], previous["mcpServers"]["tesks"])
+        self.assertEqual(json.loads(self.claude.read_text())["mcpServers"]["tasklie"], previous["mcpServers"]["tasklie"])
         self.assertTrue(self.codex.read_text().startswith(original))
         self.assertNotIn("test-only-secret", self.state.read_text())
         backups = list(self.home.rglob("*.dotagents-backup-*"))
@@ -84,14 +84,14 @@ class MCPTests(unittest.TestCase):
     def test_uninstall_preserves_modified_entries(self):
         self.run_install()
         data = json.loads(self.claude.read_text())
-        data["mcpServers"]["tesks"]["url"] = "https://changed.example/mcp"
+        data["mcpServers"]["tasklie"]["url"] = "https://changed.example/mcp"
         self.claude.write_text(json.dumps(data))
         self.codex.write_text(self.codex.read_text().replace(
-            "https://tesks.dev.paradaux.io/mcp", "https://changed.example/mcp"))
+            "https://app.taskl.ie/api/public/mcp", "https://changed.example/mcp"))
         self.run_install("--uninstall")
         self.run_install("--uninstall")
-        self.assertEqual(set(json.loads(self.claude.read_text())["mcpServers"]), {"tesks"})
-        self.assertEqual(set(tomllib.loads(self.codex.read_text())["mcp_servers"]), {"tesks"})
+        self.assertEqual(set(json.loads(self.claude.read_text())["mcpServers"]), {"tasklie"})
+        self.assertEqual(set(tomllib.loads(self.codex.read_text())["mcp_servers"]), {"tasklie"})
 
     def test_manifest_update_removes_stale_owned_entries(self):
         for agent, merge, parse in (("codex", installer.merge_codex, tomllib.loads),
@@ -99,10 +99,28 @@ class MCPTests(unittest.TestCase):
             text, owned = merge("", installer.render(agent), {})
             desired = installer.render(agent)
             del desired["mariadb-economy"]
-            desired["tesks"]["url"] = "https://new.example/mcp"
+            desired["tasklie"]["url"] = "https://new.example/mcp"
             updated, _ = merge(text, desired, owned)
             servers = parse(updated)["mcp_servers" if agent == "codex" else "mcpServers"]
             self.assertEqual(servers, desired)
+
+    def test_tasklie_migration_removes_managed_tesks(self):
+        for agent, merge, parse in (("codex", installer.merge_codex, tomllib.loads),
+                                    ("claude", installer.merge_claude, json.loads)):
+            desired = installer.render(agent)
+            old = dict(desired)
+            old["tesks"] = dict(old.pop("tasklie"))
+            old["tesks"]["url"] = "https://tesks.dev.paradaux.io/mcp"
+            if agent == "codex":
+                old["tesks"]["bearer_token_env_var"] = "TESKS_MCP_TOKEN"
+            else:
+                old["tesks"]["headers"] = {"Authorization": "Bearer ${TESKS_MCP_TOKEN}"}
+            text, owned = merge("", old, {})
+            updated, new_owned = merge(text, desired, owned)
+            servers = parse(updated)["mcp_servers" if agent == "codex" else "mcpServers"]
+            self.assertEqual(servers, desired)
+            self.assertNotIn("tesks", new_owned)
+            self.assertEqual(servers["tasklie"]["url"], "https://app.taskl.ie/api/public/mcp")
 
     def test_invalid_config_preflight_preserves_other_file(self):
         self.codex.parent.mkdir()

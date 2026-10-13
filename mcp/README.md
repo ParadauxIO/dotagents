@@ -1,14 +1,14 @@
 # Shared MCP setup
 
 `servers.json` is the canonical MCP manifest for both agents. It captures the
-union of the user-level Codex and Claude Code MCP configs: MariaDB Economy and
-Tesks appeared in both; Keycloak appeared in Codex. All three are installed for
+union of the user-level Codex and Claude Code MCP configs. Tasklie replaces the
+previous Tesks entry and uses its updated endpoint. All three are installed for
 both agents unless `--agent claude` or `--agent codex` is selected.
 
 | Server | Connection | Requirements on a new machine |
 | --- | --- | --- |
 | `mariadb-economy` | `http://10.111.71.145:8000/mcp` | Network/VPN access to this private address |
-| `tesks` | `https://tesks.dev.paradaux.io/mcp` | `TESKS_MCP_TOKEN` environment variable |
+| `tasklie` | `https://app.taskl.ie/api/public/mcp` | `TASKLIE_MCP_TOKEN` environment variable |
 | `keycloak` | Local Python launcher, Node.js MCP process | Node.js, Git, npm, pinned server build, local Keycloak credentials |
 
 ## Install and update
@@ -45,24 +45,29 @@ agents. If a write fails, fix the reported configuration problem and rerun.
 The installer does not start servers, install runtimes, or make authenticated
 requests. Imported configuration is local-machine setup, not cloud provisioning.
 
-## Tesks authentication
+## Tasklie authentication
+
+When updating from Tesks, set `TASKLIE_MCP_TOKEN` using your current Tasklie token;
+`TESKS_MCP_TOKEN` is no longer used. Rerun `bash install.sh --with-mcp` to replace
+unchanged, dotagents-managed `tesks` entries with `tasklie`. Pre-existing or locally
+modified `tesks` entries are preserved and must be removed manually if obsolete.
 
 The token previously embedded in the local configs is intentionally not stored
 in Git. Retrieve it from your existing local configuration or secret manager and
-set `TESKS_MCP_TOKEN` in the environment that launches each agent. Supply the token
+set `TASKLIE_MCP_TOKEN` in the environment that launches each agent. Supply the token
 only, without `Bearer `. For an interactive Bash session without putting the token
 in shell history:
 
 ```bash
-read -r -s -p 'Tesks MCP token: ' TESKS_MCP_TOKEN
+read -r -s -p 'Tasklie MCP token: ' TASKLIE_MCP_TOKEN
 printf '\n'
-export TESKS_MCP_TOKEN
+export TASKLIE_MCP_TOKEN
 ```
 
 `mcp/.env.example` documents the variable; neither agent nor this installer
 automatically loads that file. For desktop clients, arrange the variable in the
 desktop launch environment. Codex uses `bearer_token_env_var`; Claude uses a
-`${TESKS_MCP_TOKEN}` reference in its Authorization header.
+`${TASKLIE_MCP_TOKEN}` reference in its Authorization header.
 
 ## Keycloak setup
 

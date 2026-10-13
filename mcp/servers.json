@@ -3,10 +3,10 @@
     "type": "http",
     "url": "http://10.111.71.145:8000/mcp"
   },
-  "tesks": {
+  "tasklie": {
     "type": "http",
-    "url": "https://tesks.dev.paradaux.io/mcp",
-    "bearer_token_env_var": "TESKS_MCP_TOKEN"
+    "url": "https://app.taskl.ie/api/public/mcp",
+    "bearer_token_env_var": "TASKLIE_MCP_TOKEN"
   },
   "keycloak": {
     "type": "stdio",
