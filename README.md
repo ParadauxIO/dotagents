@@ -5,7 +5,8 @@ is the source of truth: author a skill once in `skills/`, and the installer link
 into each agent's native personal skills directory.
 
 The repository currently ships **no skills or hooks**. It includes shared
-MCP setup for GitHub, MariaDB Economy, Tasklie, Keycloak, and Infisical. This is a Git-based
+MCP setup for GitHub, MariaDB Economy, Tasklie, Keycloak, Infisical, and headless
+Playwright. This is a Git-based
 toolkit scaffold, not a marketplace plugin; neither agent's plugin manager is
 required.
 

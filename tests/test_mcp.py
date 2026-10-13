@@ -39,7 +39,7 @@ class MCPTests(unittest.TestCase):
         self.run_install()
         claude = json.loads(self.claude.read_text())["mcpServers"]
         codex = tomllib.loads(self.codex.read_text())["mcp_servers"]
-        self.assertEqual(set(claude), {"github", "mariadb-economy", "tasklie", "keycloak", "infisical"})
+        self.assertEqual(set(claude), {"github", "mariadb-economy", "tasklie", "keycloak", "infisical", "playwright"})
         self.assertEqual(set(claude), set(codex))
         self.assertEqual(claude["github"], {
             "type": "http", "url": "https://api.githubcopilot.com/mcp/",

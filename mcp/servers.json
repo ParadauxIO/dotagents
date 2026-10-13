@@ -18,6 +18,11 @@
     "command": "python3",
     "args": ["${DOTAGENTS_ROOT}/mcp/infisical.py"]
   },
+  "playwright": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@playwright/mcp@latest", "--headless"]
+  },
   "keycloak": {
     "type": "stdio",
     "command": "python3",

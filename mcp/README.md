@@ -2,7 +2,7 @@
 
 `servers.json` is the canonical MCP manifest for both agents. It captures the
 union of the user-level Codex and Claude Code MCP configs. Tasklie replaces the
-previous Tesks entry and uses its updated endpoint. All five are installed for
+previous Tesks entry and uses its updated endpoint. All six are installed for
 both agents unless `--agent claude` or `--agent codex` is selected.
 
 | Server | Connection | Requirements on a new machine |
@@ -12,6 +12,7 @@ both agents unless `--agent claude` or `--agent codex` is selected.
 | `tasklie` | `https://app.taskl.ie/api/public/mcp` | `TASKLIE_MCP_TOKEN` environment variable |
 | `keycloak` | Local Python launcher, Node.js MCP process | Node.js, Git, npm, pinned server build, local Keycloak credentials |
 | `infisical` | Local Python launcher, Node.js MCP process | Node.js, npm, `@infisical/mcp`, local Universal Auth credentials |
+| `playwright` | Local Node.js MCP process via `npx` | Node.js 18+, npm, Chrome and its system dependencies; runs headless |
 
 Paseo tools are configured separately in the local Paseo daemon, as described
 below; they are not an entry in `servers.json`.
@@ -183,6 +184,28 @@ Keep credentials outside the checkout. Grant the machine identity access to the
 required projects in Infisical. Restart the agents after rotating credentials.
 Existing unmanaged Infisical entries are preserved by the installer; remove them
 manually if you want to switch to the shared launcher.
+
+## Playwright setup
+
+The shared entry runs `npx -y @playwright/mcp@latest --headless` for both agents.
+The explicit `--headless` flag lets it launch a browser on machines without a
+display server or desktop session. See the official
+[Playwright MCP documentation](https://github.com/microsoft/playwright-mcp).
+
+Install Node.js 18+ and npm, and make `npx` available in each agent's launch
+environment. The first launch downloads the MCP package, so it needs npm registry
+access. This entry follows upstream `latest`, rather than pinning a package version.
+Chrome (the default browser) and its Linux system dependencies must also be
+installed; the dotagents installer does not provision them. If Chrome is missing:
+
+```bash
+npx -y playwright install chrome
+```
+
+Browser installation may require administrator privileges for system packages.
+After applying the shared configuration and restarting the agents, verify with a
+Playwright navigation to `about:blank` and a browser snapshot. No API token is
+required.
 
 ## Verify and uninstall
 
