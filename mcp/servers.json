@@ -8,6 +8,11 @@
     "url": "https://app.taskl.ie/api/public/mcp",
     "bearer_token_env_var": "TASKLIE_MCP_TOKEN"
   },
+  "infisical": {
+    "type": "stdio",
+    "command": "python3",
+    "args": ["${DOTAGENTS_ROOT}/mcp/infisical.py"]
+  },
   "keycloak": {
     "type": "stdio",
     "command": "python3",

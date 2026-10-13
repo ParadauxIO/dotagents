@@ -39,7 +39,7 @@ class MCPTests(unittest.TestCase):
         self.run_install()
         claude = json.loads(self.claude.read_text())["mcpServers"]
         codex = tomllib.loads(self.codex.read_text())["mcp_servers"]
-        self.assertEqual(set(claude), {"mariadb-economy", "tasklie", "keycloak"})
+        self.assertEqual(set(claude), {"mariadb-economy", "tasklie", "keycloak", "infisical"})
         self.assertEqual(set(claude), set(codex))
         self.assertEqual(claude["tasklie"]["headers"]["Authorization"], "Bearer ${TASKLIE_MCP_TOKEN}")
         self.assertEqual(codex["tasklie"]["bearer_token_env_var"], "TASKLIE_MCP_TOKEN")
@@ -153,6 +153,36 @@ class MCPTests(unittest.TestCase):
         self.assertTrue((self.home / "codex-profile/config.toml").exists())
         self.assertFalse(self.claude.exists())
         self.assertFalse(self.codex.exists())
+
+    def test_infisical_launcher_uses_local_credentials_and_filters_environment(self):
+        spec = importlib.util.spec_from_file_location("infisical_launcher", ROOT / "mcp/infisical.py")
+        launcher = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(launcher)
+        config = self.home / "credentials.json"
+        config.write_text(json.dumps({"host": "https://secrets.example", "clientId": "test-id",
+                                      "clientSecret": "test-secret"}))
+        config.chmod(0o600)
+        entry = self.home / "@infisical/mcp/dist/index.js"
+        entry.parent.mkdir(parents=True)
+        entry.touch()
+        with patch.object(launcher, "CONFIG", config), \
+                patch.object(launcher.shutil, "which", side_effect=lambda name: "/fake/" + name), \
+                patch.object(launcher.subprocess, "run", return_value=subprocess.CompletedProcess(
+                    [], 0, stdout=str(self.home) + "\n")), \
+                patch.dict(os.environ, {"UNRELATED_SECRET": "must-not-forward"}), \
+                patch.object(launcher.os, "execve") as execute:
+            launcher.launch()
+            command, argv, env = execute.call_args.args
+            self.assertEqual(command, "/fake/node")
+            self.assertEqual(argv, [command, str(entry)])
+            self.assertEqual(env["INFISICAL_HOST_URL"], "https://secrets.example")
+            self.assertEqual(env["INFISICAL_AUTH_METHOD"], "universal-auth")
+            self.assertEqual(env["INFISICAL_UNIVERSAL_AUTH_CLIENT_ID"], "test-id")
+            self.assertEqual(env["INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET"], "test-secret")
+            self.assertNotIn("UNRELATED_SECRET", env)
+            config.chmod(0o644)
+            with self.assertRaises(SystemExit):
+                launcher.launch()
 
     def test_keycloak_launcher_uses_local_credentials_and_filters_environment(self):
         spec = importlib.util.spec_from_file_location("keycloak_launcher", ROOT / "mcp/keycloak.py")

@@ -2,7 +2,7 @@
 
 `servers.json` is the canonical MCP manifest for both agents. It captures the
 union of the user-level Codex and Claude Code MCP configs. Tasklie replaces the
-previous Tesks entry and uses its updated endpoint. All three are installed for
+previous Tesks entry and uses its updated endpoint. All four are installed for
 both agents unless `--agent claude` or `--agent codex` is selected.
 
 | Server | Connection | Requirements on a new machine |
@@ -10,6 +10,7 @@ both agents unless `--agent claude` or `--agent codex` is selected.
 | `mariadb-economy` | `http://10.111.71.145:8000/mcp` | Network/VPN access to this private address |
 | `tasklie` | `https://app.taskl.ie/api/public/mcp` | `TASKLIE_MCP_TOKEN` environment variable |
 | `keycloak` | Local Python launcher, Node.js MCP process | Node.js, Git, npm, pinned server build, local Keycloak credentials |
+| `infisical` | Local Python launcher, Node.js MCP process | Node.js, npm, `@infisical/mcp`, local Universal Auth credentials |
 
 ## Install and update
 
@@ -99,6 +100,34 @@ sessions are not transferred through Git. The launcher also reuses credentials
 already at that path and finds Python/Node through `PATH` instead of hardcoded
 machine paths. The server provides administrative tools; the read-only verification
 request does not restrict the server's later permissions.
+
+## Infisical setup
+
+The launcher uses the existing local credential format and passes Universal Auth
+credentials to the MCP process. It finds Node.js and npm through `PATH` and the MCP
+package in npm's global install directory. Install the same package version as the
+original local setup:
+
+```bash
+npm install -g @infisical/mcp@0.0.24
+```
+
+Reuse your existing `${XDG_CONFIG_HOME:-~/.config}/infisical-mcp/credentials.json`.
+On a new machine, create that file locally with permissions `0600` and these keys,
+replacing the placeholders with your machine identity's Universal Auth credentials:
+
+```json
+{
+  "host": "https://secrets.paradaux.io",
+  "clientId": "<client ID>",
+  "clientSecret": "<client secret>"
+}
+```
+
+Keep credentials outside the checkout. Grant the machine identity access to the
+required projects in Infisical. Restart the agents after rotating credentials.
+Existing unmanaged Infisical entries are preserved by the installer; remove them
+manually if you want to switch to the shared launcher.
 
 ## Verify and uninstall
 
