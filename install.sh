@@ -28,7 +28,7 @@ while (($#)); do
   esac
 done
 
-root=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 source_dir="$root/skills"
 [[ -d "$source_dir" ]] || die "Missing skills directory: $source_dir"
 targets=()
