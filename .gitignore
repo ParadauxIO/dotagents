@@ -6,3 +6,6 @@ __pycache__/
 !.env.example
 credentials.json
 *.dotagents-backup-*
+.dotagents-install.json
+.dotagents-update.lock/
+.dotagents-profile-*

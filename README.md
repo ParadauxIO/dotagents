@@ -4,7 +4,7 @@ A shared, globally installed toolkit for Claude Code and Codex. This Git reposit
 is the source of truth: author a skill once in `skills/`, and the installer links it
 into each agent's native personal skills directory.
 
-The repository contains **no skills, hooks, or agent prompts**. It includes shared
+The repository currently ships **no skills or hooks**. It includes shared
 MCP setup for GitHub, MariaDB Economy, Tasklie, Keycloak, and Infisical. This is a Git-based
 toolkit scaffold, not a marketplace plugin; neither agent's plugin manager is
 required.
@@ -17,18 +17,20 @@ private, authenticate with GitHub first (for example, `gh auth login`).
 
 ```bash
 gh repo clone paradauxio/dotagents "$HOME/.local/share/dotagents"
-bash "$HOME/.local/share/dotagents/install.sh" --with-mcp
+python3 "$HOME/.local/share/dotagents/update.py" --install --with-mcp
 ```
 
 Alternatively, clone with an SSH key that has access to the repository:
 
 ```bash
 git clone git@github.com:paradauxio/dotagents.git "$HOME/.local/share/dotagents"
-bash "$HOME/.local/share/dotagents/install.sh" --with-mcp
+python3 "$HOME/.local/share/dotagents/update.py" --install --with-mcp
 ```
 
 Complete the [MCP credential and Keycloak setup](mcp/README.md) after installation.
-Omit `--with-mcp` for skills only (which needs only Bash).
+Omit `--with-mcp` for skills only. The update wrapper requires Python; direct
+`bash install.sh` remains available for Bash-only skill installation, but does not
+save update settings.
 
 Keep the checkout at that location: installed skills are symlinks to it. Once
 skills have been added, start a new agent session to confirm discovery.
@@ -45,9 +47,9 @@ These are local user installations; they do not provision remote/cloud sessions.
 
 ```bash
 # Preview changes, or install for just one agent.
-bash install.sh --dry-run
-bash install.sh --agent claude
-bash install.sh --agent codex
+python3 update.py --install --dry-run
+python3 update.py --install --agent claude
+python3 update.py --install --agent codex
 ```
 
 For nonstandard installations, set `DOTAGENTS_CLAUDE_SKILLS_DIR` and/or
@@ -56,10 +58,35 @@ where links are written; they do not configure an agent to discover a new path.
 
 ## Update
 
+Close the selected agents before applying MCP updates; restart them afterward.
+The initial `update.py --install` saves your selected agent, MCP choice, and resolved
+skill/configuration/ownership paths in the checkout's ignored, owner-only
+`.dotagents-install.json`. Updates reuse those settings even in a different shell.
+Keep the profile and MCP ownership state local; neither contains credentials.
+One checkout stores one installation recipe. Use separate checkouts for separate
+profiles. To change the recipe, rerun `--install` with all intended options and
+path overrides; it does not uninstall the previous destinations.
+
 ```bash
-git -C "$HOME/.local/share/dotagents" pull --ff-only
-bash "$HOME/.local/share/dotagents/install.sh" --with-mcp
+python3 "$HOME/.local/share/dotagents/update.py" --dry-run
+python3 "$HOME/.local/share/dotagents/update.py"
 ```
+
+The preview fetches Git metadata and reports incoming commits without changing the
+checkout or agent configuration. The update requires a clean checkout and a tracking
+branch with no local commits, fast-forwards to the fetched revision, previews the
+installer, and reapplies it. It does not stash, reset, rebase, or overwrite conflicts.
+If installation fails after Git advances, fix the reported problem and rerun the
+same update command. The command reapplies installation even with no new commits.
+
+For an existing installation made with `install.sh`, first pull this version with
+`git pull --ff-only`, then run `python3 update.py --install` with your original
+`--agent`, `--with-mcp`, and path overrides to save its settings. Direct calls to
+`install.sh` do not change the saved recipe. After uninstalling, remove
+`.dotagents-install.json` to prevent accidentally reinstalling through the updater.
+
+Nothing schedules updates by default. See [agent maintenance instructions](MAINTENANCE.md)
+for automatic execution, stop conditions, dependency upgrades, and verification.
 
 Existing skill edits are visible through their links. Rerunning the installer
 adds new skills and removes stale links for deleted or renamed skills. It is safe
@@ -109,3 +136,5 @@ and pull requests. Tests use disposable checkouts and temporary homes; no instal
 agent or API key is needed. They cover empty installs, both agents, repeat installs,
 conflicts, updates, dry runs, custom paths, and selective uninstall. Agent discovery
 itself should be checked in each client when adding real skills.
+Updater tests use local Git remotes to cover saved settings, fast-forward updates,
+checkout protection, and recovery after an installation failure.

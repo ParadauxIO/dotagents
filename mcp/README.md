@@ -29,6 +29,8 @@ message means your previous configuration remains in use; remove that server
 manually if you want dotagents to manage it instead. Existing credentials are never
 read into the repository or ownership state.
 
+For repeatable updates, use the [saved installation updater](../README.md#update)
+and follow the [agent maintenance procedure](../MAINTENANCE.md).
 Rerun after pulling updates. Entries previously installed by dotagents are updated
 or removed to match the manifest only if they have not been edited locally.
 Before each changed config is replaced, an owner-only backup is saved next to it
