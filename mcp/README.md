@@ -2,11 +2,12 @@
 
 `servers.json` is the canonical MCP manifest for both agents. It captures the
 union of the user-level Codex and Claude Code MCP configs. Tasklie replaces the
-previous Tesks entry and uses its updated endpoint. All four are installed for
+previous Tesks entry and uses its updated endpoint. All five are installed for
 both agents unless `--agent claude` or `--agent codex` is selected.
 
 | Server | Connection | Requirements on a new machine |
 | --- | --- | --- |
+| `github` | `https://api.githubcopilot.com/mcp/` | `GITHUB_PERSONAL_ACCESS_TOKEN` environment variable |
 | `mariadb-economy` | `http://10.111.71.145:8000/mcp` | Network/VPN access to this private address |
 | `tasklie` | `https://app.taskl.ie/api/public/mcp` | `TASKLIE_MCP_TOKEN` environment variable |
 | `keycloak` | Local Python launcher, Node.js MCP process | Node.js, Git, npm, pinned server build, local Keycloak credentials |
@@ -45,6 +46,28 @@ Config writes use atomic replacement per file, not a transaction spanning both
 agents. If a write fails, fix the reported configuration problem and rerun.
 The installer does not start servers, install runtimes, or make authenticated
 requests. Imported configuration is local-machine setup, not cloud provisioning.
+
+## GitHub authentication
+
+GitHub uses the [official remote MCP server](https://github.com/github/github-mcp-server)
+with personal access token authentication; no local server or Docker is required.
+Create a GitHub personal access token with access to the repositories and permissions
+needed for your intended tools, then set it in the environment that launches each
+agent. For an interactive Bash session without putting the token in shell history:
+
+```bash
+read -r -s -p 'GitHub personal access token: ' GITHUB_PERSONAL_ACCESS_TOKEN
+printf '\n'
+export GITHUB_PERSONAL_ACCESS_TOKEN
+bash install.sh --with-mcp
+```
+
+Restart the agents from that environment. Codex uses `bearer_token_env_var`;
+Claude uses `${GITHUB_PERSONAL_ACCESS_TOKEN}` in its Authorization header. The
+installer stores only the variable reference, never the token. `mcp/.env.example`
+documents the variable but is not loaded automatically. For desktop clients, set
+the variable in the desktop launch environment. A GitHub CLI login alone does not
+set this variable.
 
 ## Tasklie authentication
 

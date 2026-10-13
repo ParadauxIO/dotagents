@@ -1,4 +1,9 @@
 {
+  "github": {
+    "type": "http",
+    "url": "https://api.githubcopilot.com/mcp/",
+    "bearer_token_env_var": "GITHUB_PERSONAL_ACCESS_TOKEN"
+  },
   "mariadb-economy": {
     "type": "http",
     "url": "http://10.111.71.145:8000/mcp"

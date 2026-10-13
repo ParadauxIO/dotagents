@@ -39,8 +39,14 @@ class MCPTests(unittest.TestCase):
         self.run_install()
         claude = json.loads(self.claude.read_text())["mcpServers"]
         codex = tomllib.loads(self.codex.read_text())["mcp_servers"]
-        self.assertEqual(set(claude), {"mariadb-economy", "tasklie", "keycloak", "infisical"})
+        self.assertEqual(set(claude), {"github", "mariadb-economy", "tasklie", "keycloak", "infisical"})
         self.assertEqual(set(claude), set(codex))
+        self.assertEqual(claude["github"], {
+            "type": "http", "url": "https://api.githubcopilot.com/mcp/",
+            "headers": {"Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"}})
+        self.assertEqual(codex["github"], {
+            "url": "https://api.githubcopilot.com/mcp/",
+            "bearer_token_env_var": "GITHUB_PERSONAL_ACCESS_TOKEN"})
         self.assertEqual(claude["tasklie"]["headers"]["Authorization"], "Bearer ${TASKLIE_MCP_TOKEN}")
         self.assertEqual(codex["tasklie"]["bearer_token_env_var"], "TASKLIE_MCP_TOKEN")
         self.assertEqual(codex["keycloak"]["args"], [str(ROOT / "mcp/keycloak.py")])
