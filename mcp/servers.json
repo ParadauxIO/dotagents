@@ -1,4 +1,8 @@
 {
+  "discord": {
+    "type": "http",
+    "url": "http://localhost:8085/mcp"
+  },
   "github": {
     "type": "http",
     "url": "https://api.githubcopilot.com/mcp/",

@@ -2,11 +2,12 @@
 
 `servers.json` is the canonical MCP manifest for both agents. It captures the
 union of the user-level Codex and Claude Code MCP configs. Tasklie replaces the
-previous Tesks entry and uses its updated endpoint. All six are installed for
+previous Tesks entry and uses its updated endpoint. All seven are installed for
 both agents unless `--agent claude` or `--agent codex` is selected.
 
 | Server | Connection | Requirements on a new machine |
 | --- | --- | --- |
+| `discord` | `http://localhost:8085/mcp` | Separately hosted SaseQ/discord-mcp server with a Discord bot token; setup pending |
 | `github` | `https://api.githubcopilot.com/mcp/` | `GITHUB_PERSONAL_ACCESS_TOKEN` environment variable |
 | `mariadb-economy` | `http://10.111.71.145:8000/mcp` | Network/VPN access to this private address |
 | `tasklie` | `https://app.taskl.ie/api/public/mcp` | `TASKLIE_MCP_TOKEN` environment variable |
@@ -79,6 +80,36 @@ Config writes use atomic replacement per file, not a transaction spanning both
 agents. If a write fails, fix the reported configuration problem and rerun.
 The installer does not start servers, install runtimes, or make authenticated
 requests. Imported configuration is local-machine setup, not cloud provisioning.
+
+## Discord setup (pending)
+
+The `discord` entry targets the default local HTTP endpoint of
+[SaseQ/discord-mcp](https://github.com/SaseQ/discord-mcp). It will be unavailable
+until you deploy the server. The installer only adds the client connection.
+If you deploy elsewhere, change the URL in `servers.json` before installation.
+
+For a local Docker deployment, create a Discord bot and invite it to your guild
+with the permissions and intents required by the upstream setup instructions.
+Supply its token to the server, not the agent configuration:
+
+```bash
+read -r -s -p 'Discord bot token: ' DISCORD_TOKEN
+printf '\n'
+export DISCORD_TOKEN
+docker run -d -i --name discord-mcp --restart unless-stopped \
+  -p 127.0.0.1:8085:8085 \
+  -e SPRING_PROFILES_ACTIVE=http -e DISCORD_TOKEN \
+  saseq/discord-mcp:latest
+unset DISCORD_TOKEN
+```
+
+Optionally pass `DISCORD_GUILD_ID` to the container for a default guild. The image
+uses upstream `latest`. Keep tokens outside Git. This example binds the service
+to loopback; remote hosting needs its own access controls.
+
+After deployment, check `http://localhost:8085/actuator/health`, restart the agents,
+and verify with a read-only server-information request. Live verification remains
+pending until deployment.
 
 ## GitHub authentication
 
