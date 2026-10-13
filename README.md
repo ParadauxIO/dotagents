@@ -9,6 +9,8 @@ MCP setup for GitHub, MariaDB Economy, Tasklie, Keycloak, and Infisical. This is
 toolkit scaffold, not a marketplace plugin; neither agent's plugin manager is
 required.
 
+For agents launched by Paseo, see [Paseo tool setup](mcp/README.md#paseo-setup).
+
 ## Install
 
 Requires Git, Bash, and Python 3.11+ on macOS, Linux, or WSL. Installation is per

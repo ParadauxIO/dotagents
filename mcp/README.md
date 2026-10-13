@@ -13,6 +13,36 @@ both agents unless `--agent claude` or `--agent codex` is selected.
 | `keycloak` | Local Python launcher, Node.js MCP process | Node.js, Git, npm, pinned server build, local Keycloak credentials |
 | `infisical` | Local Python launcher, Node.js MCP process | Node.js, npm, `@infisical/mcp`, local Universal Auth credentials |
 
+Paseo tools are configured separately in the local Paseo daemon, as described
+below; they are not an entry in `servers.json`.
+
+## Paseo setup
+
+With Paseo installed, enable **Settings → your host → Agents → Enable Paseo
+tools**. Alternatively, merge these fields into `~/.paseo/config.json`, preserving
+the rest of your configuration:
+
+```json
+{
+  "daemon": {
+    "mcp": {
+      "enabled": true,
+      "injectIntoAgents": true
+    }
+  }
+}
+```
+
+Run `paseo reload`, then start a new agent or reload an existing agent. Paseo
+supplies its tools to agents it launches through the provider's native tool
+interface or MCP. This does not configure standalone clients launched outside
+Paseo. The dotagents installer does not edit Paseo's daemon configuration.
+
+Verify discovery in the refreshed agent with a read-only Paseo tool such as
+`list_workspaces`. Reloading the daemon alone does not refresh an existing
+agent's tool catalog. See the official [Paseo MCP reference](https://paseo.sh/docs/mcp)
+for provider-specific tool policies and the full catalog.
+
 ## Install and update
 
 Close the agents before updating their configuration files, then run:
