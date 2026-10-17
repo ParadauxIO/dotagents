@@ -1,5 +1,5 @@
 ---
-name: dotagents-create-pr
+name: create-pr
 description: Create a GitHub pull request with Why, How, Diagram, and Screenshots sections, uploading diagram images and real application screenshots through the gh CLI.
 ---
 
@@ -91,7 +91,7 @@ before images; do not switch a dirty worktree or modify the DOM/CSS to fabricate
 the result. Keep viewport, fixture data, theme, and framing comparable. Label the
 page and relevant state, and record tested revisions. If a base build is
 unavailable, provide honest after-only evidence and explain the limitation.
-The `dotagents-verify-webapp` skill can help when available and verification is
+The `paradaux:verify-webapp` skill can help when available and verification is
 needed, but is not required to use this skill.
 
 Inspect every image before uploading. Prefer synthetic data; exclude credentials

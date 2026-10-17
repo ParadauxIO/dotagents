@@ -1,5 +1,5 @@
 ---
-name: dotagents-debug-auth
+name: debug-auth
 description: Diagnose failed login, session, or authorization behavior in applications using Keycloak, including mismatches in app configuration or Infisical-managed settings.
 ---
 

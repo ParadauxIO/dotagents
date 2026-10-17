@@ -9,6 +9,8 @@ import sys
 import tempfile
 import unittest
 
+from plugin_fixture import copy_package, fake_clients
+
 SOURCE = Path(__file__).resolve().parents[1]
 
 
@@ -28,11 +30,14 @@ class UpdateTests(unittest.TestCase):
                         GIT_CONFIG_GLOBAL=os.devnull, GIT_AUTHOR_NAME="Test",
                         GIT_AUTHOR_EMAIL="test@example.com", GIT_COMMITTER_NAME="Test",
                         GIT_COMMITTER_EMAIL="test@example.com")
+        self.env.update(CODEX_HOME=str(self.home / "codex"), CLAUDE_CONFIG_DIR=str(self.home / "claude"))
+        fake_clients(self.base, self.env)
         self.git(self.base, "init", "--initial-branch=main", str(self.remote))
-        for name in ("update.py", "install.sh", ".gitignore"):
+        copy_package(self.remote)
+        for name in ("update.py", ".gitignore"):
             shutil.copyfile(SOURCE / name, self.remote / name)
         shutil.copytree(SOURCE / "mcp", self.remote / "mcp")
-        (self.remote / "skills").mkdir()
+
         self.add_skill("dotagents-old")
         self.commit(self.remote)
         self.git(self.base, "clone", str(self.remote), str(self.repo))
@@ -46,9 +51,9 @@ class UpdateTests(unittest.TestCase):
         self.git(cwd, "commit", "-m", "Test change")
 
     def add_skill(self, name):
-        directory = self.remote / "skills" / name
+        directory = self.remote / "plugins/paradaux/skills" / name
         directory.mkdir()
-        (directory / "SKILL.md").write_text("Test skill\n")
+        (directory / "SKILL.md").write_text(f"---\nname: {name}\ndescription: Test skill.\n---\nTest.\n")
 
     def run_update(self, *args, success=True):
         result = subprocess.run([sys.executable, str(self.repo / "update.py"), *args],
@@ -57,23 +62,21 @@ class UpdateTests(unittest.TestCase):
         return result.stdout + result.stderr
 
     def test_remembers_scope_paths_and_updates_skills(self):
-        custom = self.base / "custom skills"
-        self.env["DOTAGENTS_CODEX_SKILLS_DIR"] = str(custom)
+        custom = self.base / "custom codex"
+        self.env["CODEX_HOME"] = str(custom)
         self.run_update("--install", "--agent", "codex")
-        del self.env["DOTAGENTS_CODEX_SKILLS_DIR"]
+        self.env["CODEX_HOME"] = str(self.home / "wrong")
         self.assertEqual(self.git(self.repo, "status", "--porcelain"), "")
-        shutil.rmtree(self.remote / "skills/dotagents-old")
-        self.add_skill("dotagents-new")
+        self.add_skill("new-skill")
         self.commit(self.remote)
         before = self.git(self.repo, "rev-parse", "HEAD")
         self.run_update("--dry-run")
         self.assertEqual(before, self.git(self.repo, "rev-parse", "HEAD"))
-        self.assertTrue((custom / "dotagents-old").is_symlink())
+        self.assertFalse((custom / "cache/skills/new-skill").exists())
         self.run_update()
-        self.assertFalse((custom / "dotagents-old").is_symlink())
-        self.assertTrue((custom / "dotagents-new").is_symlink())
-        self.assertFalse((self.home / ".claude").exists())
-        self.assertFalse((self.home / ".agents").exists())
+        self.assertTrue((custom / "cache/skills/new-skill/SKILL.md").exists())
+        self.assertFalse((self.home / "wrong").exists())
+        self.assertFalse((self.home / "claude").exists())
         self.run_update()
 
     def test_mcp_settings_and_ownership_survive_environment_changes(self):
@@ -103,7 +106,7 @@ class UpdateTests(unittest.TestCase):
     def test_invalid_profile_is_reported_without_traceback(self):
         (self.repo / ".dotagents-install.json").write_text("[]")
         output = self.run_update(success=False)
-        self.assertIn("Invalid installation profile", output)
+        self.assertIn("Invalid or legacy installation profile", output)
         self.assertNotIn("Traceback", output)
 
     def test_dirty_detached_ahead_diverged_and_missing_upstream(self):
@@ -130,17 +133,25 @@ class UpdateTests(unittest.TestCase):
 
     def test_retries_installation_after_git_advanced(self):
         self.run_update("--install", "--agent", "codex")
-        self.add_skill("dotagents-new")
+        self.add_skill("new-skill")
         self.commit(self.remote)
-        conflict = self.home / ".agents/skills/dotagents-new"
-        conflict.write_text("preserve")
-        self.assertIn("Conflict", self.run_update(success=False))
+        self.env["FAIL_PLUGIN"] = "codex"
+        self.run_update(success=False)
         self.assertEqual(self.git(self.repo, "rev-parse", "HEAD"),
                          self.git(self.remote, "rev-parse", "HEAD"))
-        self.assertEqual(conflict.read_text(), "preserve")
-        conflict.unlink()
+        del self.env["FAIL_PLUGIN"]
         self.run_update()
-        self.assertTrue(conflict.is_symlink())
+        self.assertTrue((self.home / "codex/cache/skills/new-skill/SKILL.md").exists())
+
+    def test_legacy_profile_requires_explicit_migration(self):
+        self.run_update("--install", "--agent", "codex")
+        path = self.repo / ".dotagents-install.json"
+        data = json.loads(path.read_text())
+        data["version"] = 1
+        path.write_text(json.dumps(data))
+        self.assertIn("legacy installation profile", self.run_update(success=False))
+        self.run_update("--install", "--agent", "codex")
+        self.assertEqual(json.loads(path.read_text())["version"], 2)
 
     def test_lock_and_update_options(self):
         lock = self.repo / ".dotagents-update.lock"

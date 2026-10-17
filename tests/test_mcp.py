@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import tomllib
 import unittest
@@ -30,7 +31,7 @@ class MCPTests(unittest.TestCase):
         self.state = self.home / ".local/state/dotagents/mcp.json"
 
     def run_install(self, *args, success=True):
-        result = subprocess.run(["bash", str(ROOT / "install.sh"), "--with-mcp", *args],
+        result = subprocess.run([sys.executable, str(ROOT / "mcp/install.py"), *args],
                                 env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
         return result

@@ -7,7 +7,7 @@ by default. Do not create one just because dotagents is installed.
 ## First installation
 
 1. Follow the clone instructions in [README.md](README.md). Keep the checkout at
-   its permanent location; installed skills and MCP launchers reference it.
+   its permanent location; the local plugin marketplace and MCP launchers reference it.
 2. Select the requested agents (`--agent all`, `claude`, or `codex`), whether MCP
    is wanted, and any documented destination overrides. With the selected clients
    closed for MCP changes, run `python3 update.py --install --with-mcp` from the
@@ -17,9 +17,12 @@ by default. Do not create one just because dotagents is installed.
    alone does not supply tokens, install server dependencies, or verify services.
 4. Restart clients and perform the verification below.
 
-Existing installations must register their original options and overrides with
-`update.py --install` once. Do not guess defaults when their original scope is
-unknown. The local profile records paths and installation choices, not secrets.
+Existing standalone installations with version-1 profiles must first pull the
+plugin release with `git pull --ff-only`, then register their original agent/MCP
+options and legacy directory overrides using `update.py --install`. Set the intended
+`CODEX_HOME` and `CLAUDE_CONFIG_DIR` for nonstandard plugin homes. Version-2 profiles
+save those homes. Do not guess a missing installation scope. Legacy skill links
+are removed only after that agent's plugin installs successfully.
 
 ## Requested or scheduled updates
 
@@ -29,7 +32,7 @@ unknown. The local profile records paths and installation choices, not secrets.
    metadata and reports the revision change; it does not preview the incoming
    revision's configuration changes. Git authentication must already work without
    interaction for unattended jobs.
-3. For profiles with MCP enabled, apply during a maintenance window when the
+3. For all plugin or MCP updates, apply during a maintenance window when the
    selected clients are closed. An agent running inside one of those clients can
    perform the Git preview, but should hand off the apply command to an external
    terminal or authorized scheduler after the client exits. Do not kill clients
@@ -70,9 +73,20 @@ pins, review the accompanying setup instructions and perform the documented buil
 or package installation separately. Do not substitute an upstream `latest` version.
 Credentials and OAuth sessions remain machine-local.
 
-After restarting, confirm installed skills are discovered in each selected client.
+After restarting, confirm the `paradaux` plugin and its five namespaced skills
+are discovered in each selected client.
 For MCP, inspect `codex mcp list` and Claude Code's `/mcp` panel as applicable, then
 check authentication/reachability using a harmless read-only operation for each
 configured service. Listing a server alone does not establish that it works.
 Report unavailable client or service checks as pending. Do not exercise
 administrative mutations merely to test connectivity.
+
+## Plugin package maintenance
+
+Use the native Claude/Codex plugin managers through `plugin_install.py`; do not
+edit caches or registries directly. Keep `plugins/paradaux/plugin.json`,
+`plugins/paradaux/.claude-plugin/plugin.json`, and the marketplace entry in
+`.claude-plugin/marketplace.json` on the same version. MCP remains separately
+managed. A conflicting `paradaux-local` source must be resolved explicitly;
+installation never repoints it automatically. Uninstall retains the marketplace
+registration. Do not use a development worktree for user installation or migration.

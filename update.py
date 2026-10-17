@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 PROFILE = ROOT / ".dotagents-install.json"
 LOCK = ROOT / ".dotagents-update.lock"
 PATH_KEYS = {"DOTAGENTS_CLAUDE_SKILLS_DIR", "DOTAGENTS_CODEX_SKILLS_DIR",
-             "DOTAGENTS_CLAUDE_CONFIG", "DOTAGENTS_CODEX_CONFIG", "DOTAGENTS_MCP_STATE"}
+             "DOTAGENTS_CLAUDE_CONFIG", "DOTAGENTS_CODEX_CONFIG", "DOTAGENTS_MCP_STATE", "CODEX_HOME", "CLAUDE_CONFIG_DIR"}
 
 
 def git(*args):
@@ -25,6 +25,8 @@ def settings(agent, with_mcp):
     home = Path.home()
     claude = Path(os.environ.get("CLAUDE_CONFIG_DIR", home / ".claude"))
     defaults = {
+        "CODEX_HOME": Path(os.environ.get("CODEX_HOME", home / ".codex")),
+        "CLAUDE_CONFIG_DIR": claude,
         "DOTAGENTS_CLAUDE_SKILLS_DIR": claude / "skills",
         "DOTAGENTS_CODEX_SKILLS_DIR": home / ".agents/skills",
         "DOTAGENTS_CLAUDE_CONFIG": claude / ".claude.json" if "CLAUDE_CONFIG_DIR" in os.environ else home / ".claude.json",
@@ -34,7 +36,7 @@ def settings(agent, with_mcp):
     paths = {key: str(Path(os.environ.get(key, value))) for key, value in defaults.items()}
     if any(not Path(value).is_absolute() for value in paths.values()):
         raise ValueError("Installation paths must be absolute.")
-    return {"version": 1, "agent": agent, "with_mcp": with_mcp, "paths": paths}
+    return {"version": 2, "agent": agent, "with_mcp": with_mcp, "paths": paths}
 
 
 def read_profile():
@@ -42,13 +44,13 @@ def read_profile():
         raise ValueError("No saved installation. Run update.py --install with your original options and path overrides first.")
     profile = json.loads(PROFILE.read_text())
     if (not isinstance(profile, dict)
-            or profile.get("version") != 1 or profile.get("agent") not in ("all", "claude", "codex")
+            or profile.get("version") != 2 or profile.get("agent") not in ("all", "claude", "codex")
             or type(profile.get("with_mcp")) is not bool
             or not isinstance(profile.get("paths"), dict)
             or set(profile["paths"]) != PATH_KEYS
             or any(not isinstance(value, str) or not Path(value).is_absolute()
                    for value in profile["paths"].values())):
-        raise ValueError("Invalid installation profile; rerun update.py --install with the intended settings.")
+        raise ValueError("Invalid or legacy installation profile; rerun update.py --install with the intended settings.")
     return profile
 
 

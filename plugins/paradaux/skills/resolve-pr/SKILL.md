@@ -1,5 +1,5 @@
 ---
-name: dotagents-resolve-pr
+name: resolve-pr
 description: Resolve failing CI checks or actionable review feedback on a GitHub pull request, then verify the affected checks and report remaining blockers.
 ---
 

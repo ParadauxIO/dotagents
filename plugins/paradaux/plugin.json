@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "paradaux",
+  "version": "1.0.0",
+  "description": "Personal engineering workflows for intake, verification, debugging, and pull requests.",
+  "author": {
+    "name": "paradaux"
+  },
+  "repository": "https://github.com/ParadauxIO/dotagents"
+}

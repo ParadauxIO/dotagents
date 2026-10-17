@@ -1,176 +1,118 @@
-"""Exercise the real Bash installer without touching the user's agent directories."""
-
+"""Exercise native plugin installation orchestration with disposable client homes."""
+import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
+import shutil
 import tempfile
 import unittest
+
+from plugin_fixture import SOURCE, copy_package, fake_clients
 
 
 class InstallerTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="dotagents tests ")
+        self.temp = tempfile.TemporaryDirectory(prefix='dotagents plugins ')
         self.addCleanup(self.temp.cleanup)
-        self.base = Path(self.temp.name).resolve()
-        self.repo = self.base / "checkout with spaces"
+        self.base = Path(self.temp.name)
+        self.repo = self.base / 'checkout'
         self.repo.mkdir()
-        self.skills = self.repo / "skills"
-        self.skills.mkdir()
-        shutil.copyfile(Path(__file__).resolve().parents[1] / "install.sh",
-                        self.repo / "install.sh")
-        self.home = self.base / "home"
+        copy_package(self.repo)
+        self.home = self.base / 'home'
         self.home.mkdir()
-        self.claude = self.home / ".claude/skills"
-        self.codex = self.home / ".agents/skills"
-        self.env = {key: value for key, value in os.environ.items()
-                    if key not in ("CLAUDE_CONFIG_DIR", "BASH_ENV")
-                    and not key.startswith("DOTAGENTS_")}
-        self.env["HOME"] = str(self.home)
+        self.env = {k:v for k,v in os.environ.items() if not k.startswith('DOTAGENTS_')
+                    and k not in ('BASH_ENV','CODEX_HOME','CLAUDE_CONFIG_DIR')}
+        self.env.update(HOME=str(self.home), CODEX_HOME=str(self.home/'codex'),
+                        CLAUDE_CONFIG_DIR=str(self.home/'claude'))
+        fake_clients(self.base,self.env)
 
-    def run_installer(self, *args, success=True):
-        result = subprocess.run(["bash", str(self.repo / "install.sh"), *args],
-                                cwd=self.base, env=self.env, text=True,
-                                capture_output=True)
-        if success:
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        else:
-            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-        return result
+    def install(self,*args,success=True):
+        r=subprocess.run(['bash',str(self.repo/'install.sh'),*args],env=self.env,
+                         text=True,capture_output=True)
+        self.assertEqual(r.returncode == 0,success,r.stdout+r.stderr)
+        return r.stdout+r.stderr
 
-    def add_skill(self, name="dotagents-example"):
-        skill = self.skills / name
-        skill.mkdir()
-        (skill / "SKILL.md").write_text(
-            f"---\nname: {name}\ndescription: Temporary test fixture.\n---\nTest.\n")
-        return skill
+    def legacy(self,agent,name='dotagents-create-pr'):
+        directory=self.home/('claude/skills' if agent=='claude' else '.agents/skills')
+        directory.mkdir(parents=True,exist_ok=True)
+        link=directory/name
+        link.symlink_to(self.repo/'skills'/name)
+        return link
 
-    def test_empty_install_and_uninstall(self):
-        self.assertIn("0 skill(s)", self.run_installer().stdout)
-        self.run_installer("--uninstall")
-        self.assertEqual(list(self.home.iterdir()), [])
+    def test_install_refresh_and_uninstall_both_agents(self):
+        links=[self.legacy(a) for a in ('claude','codex')]
+        self.install()
+        self.assertTrue(all(not p.is_symlink() for p in links))
+        for agent in ('claude','codex'):
+            self.assertTrue((self.home/agent/'cache/skills/create-pr/SKILL.md').exists())
+        source=self.repo/'plugins/paradaux/skills/create-pr/SKILL.md'
+        source.write_text(source.read_text()+'\nRefreshed\n')
+        self.install()
+        for agent in ('claude','codex'):
+            self.assertIn('Refreshed',(self.home/agent/'cache/skills/create-pr/SKILL.md').read_text())
+        self.install('--uninstall')
+        self.install('--uninstall')
+        for agent in ('claude','codex'):
+            self.assertFalse((self.home/agent/'cache').exists())
 
-    def test_both_agents_repeat_install_and_live_edits(self):
-        skill = self.add_skill()
-        self.run_installer()
-        for target in (self.claude, self.codex):
-            link = target / skill.name
-            self.assertTrue(link.is_symlink())
-            self.assertEqual(os.readlink(link), str(skill))
-        self.run_installer()
-        (skill / "SKILL.md").write_text("Updated content")
-        self.assertEqual((self.codex / skill.name / "SKILL.md").read_text(),
-                         "Updated content")
+    def test_dry_run_does_not_create_client_homes_or_remove_links(self):
+        self.install('--dry-run')
+        self.assertEqual(list(self.home.iterdir()),[])
+        link=self.legacy('claude')
+        self.install('--uninstall','--dry-run')
+        self.assertTrue(link.is_symlink())
 
-    def test_selective_install_and_uninstall(self):
-        skill = self.add_skill()
-        self.run_installer("--agent", "codex")
-        self.assertFalse(self.claude.exists())
-        self.run_installer("--agent", "claude")
-        self.run_installer("--uninstall", "--agent", "claude")
-        self.assertFalse((self.claude / skill.name).is_symlink())
-        self.assertTrue((self.codex / skill.name).is_symlink())
+    def test_selective_custom_legacy_migration_preserves_unrelated(self):
+        old=self.base/'custom skills';old.mkdir()
+        self.env['DOTAGENTS_CODEX_SKILLS_DIR']=str(old)
+        owned=old/'start-work';owned.symlink_to(self.repo/'skills/start-work')
+        other=old/'other';other.symlink_to(self.base/'missing')
+        regular=old/'create-pr';regular.write_text('user content')
+        self.install('--agent','codex')
+        self.assertFalse(owned.is_symlink())
+        self.assertTrue(other.is_symlink())
+        self.assertEqual(regular.read_text(),'user content')
+        self.assertFalse((self.home/'claude').exists())
 
-    def test_conflicts_preflight_both_agents(self):
-        skill = self.add_skill()
-        self.codex.mkdir(parents=True)
-        conflict = self.codex / skill.name
-        for kind in ("file", "directory", "broken-link", "directory-link"):
-            with self.subTest(kind=kind):
-                if kind == "file":
-                    conflict.write_text("keep me")
-                elif kind == "directory":
-                    conflict.mkdir()
-                else:
-                    conflict.symlink_to(self.base / "missing" if kind == "broken-link"
-                                        else self.home, target_is_directory=True)
-                self.assertIn("Conflict", self.run_installer(success=False).stderr)
-                self.assertFalse(self.claude.exists())
-                self.assertTrue(os.path.lexists(conflict))
-                if kind == "directory":
-                    conflict.rmdir()
-                else:
-                    conflict.unlink()
+    def test_marketplace_conflict_preflight_preserves_links(self):
+        link=self.legacy('claude')
+        config=self.home/'codex';config.mkdir()
+        (config/'fake.json').write_text(json.dumps({'source':str(self.base/'other')}))
+        self.assertIn('Conflict',self.install(success=False))
+        self.assertTrue(link.is_symlink())
+        self.assertFalse((self.home/'claude/cache').exists())
 
-    def test_dry_run_install_uninstall_and_prune(self):
-        skill = self.add_skill()
-        self.run_installer("--dry-run")
-        self.assertEqual(list(self.home.iterdir()), [])
-        self.run_installer()
-        self.run_installer("--uninstall", "--dry-run")
-        self.assertTrue((self.claude / skill.name).is_symlink())
-        shutil.rmtree(skill)
-        self.run_installer("--dry-run")
-        self.assertTrue((self.codex / skill.name).is_symlink())
+    def test_failed_install_keeps_legacy_links_and_retry_works(self):
+        link=self.legacy('codex')
+        self.env['FAIL_PLUGIN']='codex'
+        self.install('--agent','codex',success=False)
+        self.assertTrue(link.is_symlink())
+        del self.env['FAIL_PLUGIN']
+        self.install('--agent','codex')
+        self.assertFalse(link.is_symlink())
 
-    def test_update_prunes_deleted_skills_and_adds_new(self):
-        old = self.add_skill("dotagents-old")
-        self.run_installer()
-        shutil.rmtree(old)
-        new = self.add_skill("dotagents-new")
-        self.run_installer()
-        for target in (self.claude, self.codex):
-            self.assertFalse(os.path.lexists(target / old.name))
-            self.assertEqual((target / new.name).resolve(), new)
+    def test_invalid_package_fails_before_changes(self):
+        (self.repo/'plugins/paradaux/skills/create-pr/SKILL.md').write_text('bad')
+        self.assertIn('name must match',self.install(success=False))
+        self.assertEqual(list(self.home.iterdir()),[])
 
-    def test_uninstall_preserves_unrelated_and_replaced_entries(self):
-        skill = self.add_skill()
-        self.run_installer()
-        unrelated = self.claude / "unrelated"
-        unrelated.symlink_to(self.home, target_is_directory=True)
-        replaced = self.claude / skill.name
-        replaced.unlink()
-        replaced.mkdir()
-        shutil.rmtree(skill)
-        self.run_installer("--uninstall")
-        self.run_installer("--uninstall")
-        self.assertTrue(unrelated.is_symlink())
-        self.assertTrue(replaced.is_dir())
-        self.assertFalse(os.path.lexists(self.codex / skill.name))
-        self.assertTrue(self.repo.exists())
+    def test_invalid_options_and_paths(self):
+        self.install('--agent','unknown',success=False)
+        self.env['CODEX_HOME']='relative'
+        self.install('--agent','codex',success=False)
 
-    def test_custom_destinations(self):
-        skill = self.add_skill()
-        custom_claude = self.base / "custom claude/skills"
-        custom_codex = self.base / "custom codex/skills"
-        self.env["DOTAGENTS_CLAUDE_SKILLS_DIR"] = str(custom_claude)
-        self.env["DOTAGENTS_CODEX_SKILLS_DIR"] = str(custom_codex)
-        self.run_installer()
-        self.assertTrue((custom_claude / skill.name).is_symlink())
-        self.assertTrue((custom_codex / skill.name).is_symlink())
-        self.assertEqual(list(self.home.iterdir()), [])
-        self.run_installer("--uninstall")
-        self.assertFalse(os.path.lexists(custom_codex / skill.name))
-
-    def test_claude_config_dir(self):
-        skill = self.add_skill()
-        config = self.base / "claude profile"
-        self.env["CLAUDE_CONFIG_DIR"] = str(config)
-        self.run_installer("--agent", "claude")
-        self.assertEqual((config / "skills" / skill.name).resolve(), skill)
-
-    def test_invalid_arguments_and_destinations(self):
-        for args in (("--agent",), ("--agent", "other"), ("--unknown",)):
-            self.run_installer(*args, success=False)
-        self.env["DOTAGENTS_CODEX_SKILLS_DIR"] = "relative/path"
-        self.run_installer(success=False)
-        self.assertEqual(list(self.home.iterdir()), [])
-        self.env["DOTAGENTS_CODEX_SKILLS_DIR"] = str(self.base / "file")
-        (self.base / "file").write_text("keep")
-        self.run_installer(success=False)
-
-    def test_invalid_skill_rejected_before_changes(self):
-        self.add_skill("valid")
-        for name in ("Uppercase", "synced", "anthropic-skills", "a--b", "a" * 65):
-            with self.subTest(name=name):
-                skill = self.add_skill(name)
-                self.run_installer(success=False)
-                self.assertEqual(list(self.home.iterdir()), [])
-                shutil.rmtree(skill)
-        (self.skills / "missing-manifest").mkdir()
-        self.run_installer(success=False)
-        self.assertEqual(list(self.home.iterdir()), [])
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_mcp_preflight_and_install_remain_independent(self):
+        shutil.copytree(SOURCE / 'mcp', self.repo / 'mcp')
+        config = self.base / 'mcp.json'
+        config.write_text('invalid json')
+        self.env['DOTAGENTS_CLAUDE_CONFIG'] = str(config)
+        link = self.legacy('claude')
+        self.install('--agent', 'claude', '--with-mcp', success=False)
+        self.assertTrue(link.is_symlink())
+        self.assertFalse((self.home / 'claude/cache').exists())
+        config.write_text('{}')
+        self.install('--agent', 'claude', '--with-mcp')
+        self.assertIn('github', json.loads(config.read_text())['mcpServers'])
+        self.assertFalse(link.is_symlink())
+        self.install('--agent', 'claude', '--with-mcp', '--uninstall')
+        self.assertNotIn('github', json.loads(config.read_text()).get('mcpServers', {}))

@@ -1,5 +1,5 @@
 ---
-name: dotagents-verify-webapp
+name: verify-webapp
 description: Verify a changed web application or reproduce a UI bug by exercising the affected user journey in a browser and checking observable state.
 ---
 

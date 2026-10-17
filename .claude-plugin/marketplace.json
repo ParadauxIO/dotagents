@@ -1,0 +1,17 @@
+{
+  "name": "paradaux-local",
+  "owner": {
+    "name": "paradaux"
+  },
+  "plugins": [
+    {
+      "name": "paradaux",
+      "source": "./plugins/paradaux",
+      "description": "Personal engineering workflows for intake, verification, debugging, and pull requests.",
+      "version": "1.0.0"
+    }
+  ],
+  "metadata": {
+    "description": "Personal engineering workflows by paradaux."
+  }
+}
