@@ -5,7 +5,7 @@ and Codex. Author each skill once under `plugins/paradaux/skills/`; native plugi
 loading supplies the `paradaux:` namespace. Skill folder and frontmatter names stay
 short, such as `create-pr`, rather than containing a literal colon.
 
-The plugin contains six skills and no hooks or bundled MCP servers. Optional
+The plugin contains seven skills and no hooks or bundled MCP servers. Optional
 shared MCP setup for Discord, GitHub, MariaDB Economy, Tasklie, Keycloak, Infisical,
 and headless Playwright remains independently managed by `mcp/install.py`.
 For agents launched by Paseo, see [Paseo tool setup](mcp/README.md#paseo-setup).
@@ -50,6 +50,7 @@ settings and caches; dotagents does not rewrite plugin registries by hand.
 
 | Skill | Use it for |
 | --- | --- |
+| [paradaux:scratchpad](plugins/paradaux/skills/scratchpad/SKILL.md) | Keep local scratch scripts, notes, and temporary artifacts in `.context/` instead of RAM-backed `/tmp`. |
 | [paradaux:start-work](plugins/paradaux/skills/start-work/SKILL.md) | Begin from a description or named Tasklie/GitHub ticket, gather context, define success, and proceed within the requested scope. |
 | [paradaux:verify-webapp](plugins/paradaux/skills/verify-webapp/SKILL.md) | Exercise a changed user journey with Playwright and report observable assertions and evidence. |
 | [paradaux:resolve-pr](plugins/paradaux/skills/resolve-pr/SKILL.md) | Fix actionable PR feedback and CI failures, tracking validation against the current commit. |
