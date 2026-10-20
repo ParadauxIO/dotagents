@@ -4,6 +4,10 @@ These five small tasks evaluate decisions, not skill wording. They supplement
 the installer tests; they are not productivity claims or a comprehensive coding
 benchmark. All artifacts are local and require only Python and Git.
 
+For the testing skill, see the separate [test-quality scenarios](test-quality.md)
+and their evaluator checks. They reuse the isolation and comparison procedure
+below, with their own raw inputs and the `test-quality` skill.
+
 ## Run a comparison
 
 For each task and arm, copy only `fixture/` into a fresh temporary workspace

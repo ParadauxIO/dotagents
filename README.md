@@ -5,7 +5,7 @@ and Codex. Author each skill once under `plugins/paradaux/skills/`; native plugi
 loading supplies the `paradaux:` namespace. Skill folder and frontmatter names stay
 short, such as `create-pr`, rather than containing a literal colon.
 
-The plugin contains eight skills and no hooks or bundled MCP servers. Optional
+The plugin contains nine skills and no hooks or bundled MCP servers. Optional
 shared MCP setup for Discord, GitHub, MariaDB Economy, Tasklie, Keycloak, Infisical,
 and headless Playwright remains independently managed by `mcp/install.py`.
 For agents launched by Paseo, see [Paseo tool setup](mcp/README.md#paseo-setup).
@@ -53,6 +53,7 @@ settings and caches; dotagents does not rewrite plugin registries by hand.
 | [paradaux:scratchpad](plugins/paradaux/skills/scratchpad/SKILL.md) | Keep local scratch scripts, notes, and temporary artifacts in `.context/` instead of RAM-backed `/tmp`. |
 | [paradaux:start-work](plugins/paradaux/skills/start-work/SKILL.md) | Begin from a description or named Tasklie/GitHub ticket, gather context, define success, and proceed within the requested scope. |
 | [paradaux:verify-webapp](plugins/paradaux/skills/verify-webapp/SKILL.md) | Exercise a changed user journey with Playwright and report observable assertions and evidence. |
+| [paradaux:test-quality](plugins/paradaux/skills/test-quality/SKILL.md) | Write, review, and strengthen unit, integration, and E2E tests with independent expectations, meaningful assertions, and demonstrated fault detection. |
 | [paradaux:review](plugins/paradaux/skills/review/SKILL.md) | Review changes and connected callers for concrete defects, verification gaps, and unnecessary complexity. |
 | [paradaux:resolve-pr](plugins/paradaux/skills/resolve-pr/SKILL.md) | Fix actionable PR feedback and CI failures, tracking validation against the current commit. |
 | [paradaux:systematic-debugging](plugins/paradaux/skills/systematic-debugging/SKILL.md) | Diagnose bugs, flaky tests, performance regressions, and cross-service failures with controlled experiments and verified repairs. |
@@ -65,7 +66,8 @@ or ask to use `paradaux:start-work` with your request. Confirm discovery after
 restarting each client; cached sessions do not gain newly installed skills.
 
 Examples: "Start work on PAR-123", "Fix filters resetting after refresh", "Verify
-the signup flow", or "Create a PR with a flow diagram and before/after screenshots".
+the signup flow", "Use test-quality to strengthen tests for this change", or
+"Create a PR with a flow diagram and before/after screenshots".
 The skills consult each project's own commands and configuration and contain no
 credentials or fixed application targets.
 
@@ -143,6 +145,8 @@ representative tasks in both agents, tracking task success, human correction tim
 rework, runtime, and appropriate activation. The [behavioral evaluation set](evaluations/README.md)
 provides five local tasks, fixture code, and evaluator-only checks for comparing
 skill revisions; it is separate from installer validation.
+Additional [test-quality scenarios](evaluations/test-quality.md) exercise assertion
+strength, property design, integration boundaries, and safe browser-test repair.
 
 Packaging follows [Claude plugins](https://code.claude.com/docs/en/plugins) and
 [OpenAI plugin packaging](https://developers.openai.com/plugins/build/plugins).
@@ -150,3 +154,8 @@ Packaging follows [Claude plugins](https://code.claude.com/docs/en/plugins) and
 The systematic debugging workflow takes inspiration from [Superpowers](https://github.com/obra/superpowers/blob/main/skills/systematic-debugging/SKILL.md), with independently written guidance for telemetry, intermittent failures, incident mitigation, and agent/tool workflows.
 
 The review and implementation guidance takes inspiration from [Ponytail](https://github.com/DietrichGebert/ponytail), with independently written instructions for complete changes, evidence-based findings, and scoped verification.
+
+The test-quality workflow independently consolidates ideas from Superpowers,
+Trail of Bits, Testcontainers, Playwright, Anthropic, and Mutant. Its
+[source notes](plugins/paradaux/skills/test-quality/references/sources.md) explain
+the influences and adaptations.
