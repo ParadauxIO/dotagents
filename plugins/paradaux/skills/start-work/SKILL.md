@@ -77,12 +77,33 @@ only when complexity, a handoff, repository policy, or the user calls for one;
 prefer the project's existing location over a new session-log convention. Do not
 force plan mode, write a plan file, or interview the user for an obvious change.
 
+## Choose the smallest complete implementation
+
+Once scope is understood, prefer existing repository helpers and conventions,
+then standard library or platform features, then already-installed dependencies.
+Write new code when those options do not meet the actual requirements. Before
+adding a dependency, abstraction, or configuration option, identify the concrete
+need it serves; avoid flexibility for hypothetical future uses. Preserve explicit
+product requirements and house components even when a native alternative is shorter.
+
+Optimize for understandable, complete behavior rather than line count. Follow
+changed contracts through callers, exports, configuration, tests, and fixtures.
+Keep trust-boundary validation, data-loss protection, security, and accessibility
+intact when simplifying or moving code.
+
+Verify new decision logic, parsing, money calculations, security checks, and bug
+fixes with focused checks that detect an incorrect outcome. Use the existing test
+suite where practical; trivial edits do not need ceremonial tests. Run all checks
+required by the repository. Record deliberate limitations and their revisit
+conditions only where useful, using existing project conventions.
+
 ## Continue and retain the outcome
 
 Implement and verify within the established scope, or deliver the requested
 investigation/plan. Carry the original acceptance criteria forward and report
-which were demonstrated, failed, or remain unverified. If evidence changes the
-approach, update the brief or existing plan rather than following stale steps.
+which were demonstrated, failed, or remain unverified. Report consequential
+omissions and known risks without inventing a skipped-work footer. If evidence
+changes the approach, update the brief or existing plan rather than following stale steps.
 
 Use sibling skills when their workflows apply and they are available:
 `paradaux:debug-auth` for Keycloak failures, `paradaux:verify-webapp` for web

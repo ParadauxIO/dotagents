@@ -73,7 +73,7 @@ pins, review the accompanying setup instructions and perform the documented buil
 or package installation separately. Do not substitute an upstream `latest` version.
 Credentials and OAuth sessions remain machine-local.
 
-After restarting, confirm the `paradaux` plugin and its seven namespaced skills
+After restarting, confirm the `paradaux` plugin and its eight namespaced skills
 are discovered in each selected client.
 For MCP, inspect `codex mcp list` and Claude Code's `/mcp` panel as applicable, then
 check authentication/reachability using a harmless read-only operation for each

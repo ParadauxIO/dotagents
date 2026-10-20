@@ -7,8 +7,8 @@
     {
       "name": "paradaux",
       "source": "./plugins/paradaux",
-      "description": "Personal engineering workflows for intake, verification, debugging, and pull requests.",
-      "version": "1.2.0"
+      "description": "Personal engineering workflows for intake, review, verification, debugging, and pull requests.",
+      "version": "1.3.0"
     }
   ],
   "metadata": {
