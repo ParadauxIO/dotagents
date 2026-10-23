@@ -76,9 +76,19 @@ def marketplace(agent, config):
 def legacy_links(directory):
     if not directory.exists():
         return []
-    # Match the old installer's exact link convention, including broken links.
-    return [p for p in directory.iterdir() if p.is_symlink()
-            and os.readlink(p) == str(ROOT / 'skills' / p.name)]
+    # Keep the old absolute skills/<link-name> convention, including broken
+    # targets. Resolve only the checkout prefix so aliases such as macOS /var
+    # and /private/var identify the same owner without following the skill link.
+    links = []
+    for path in directory.iterdir():
+        if not path.is_symlink():
+            continue
+        target = Path(os.readlink(path))
+        if (target.is_absolute() and target.name == path.name
+                and target.parent.name == 'skills'
+                and target.parent.parent.resolve() == ROOT):
+            links.append(path)
+    return links
 
 
 def main():

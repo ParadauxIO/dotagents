@@ -74,6 +74,32 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(regular.read_text(),'user content')
         self.assertFalse((self.home/'claude').exists())
 
+    def test_legacy_cleanup_through_checkout_alias_preserves_unrelated(self):
+        # Model macOS /var -> /private/var without depending on the host OS.
+        alias = self.base / 'checkout alias'
+        alias.symlink_to(self.repo, target_is_directory=True)
+        self.repo = alias
+        owned = [self.legacy(agent) for agent in ('claude', 'codex')]
+        directory = owned[0].parent
+        other_checkout = directory / 'other-checkout'
+        other_checkout.symlink_to(self.base / 'another checkout/skills/other-checkout')
+        wrong_name = directory / 'wrong-name'
+        wrong_name.symlink_to(alias / 'skills/someone-else')
+        wrong_directory = directory / 'wrong-directory'
+        wrong_directory.symlink_to(alias / 'other/wrong-directory')
+        relative = directory / 'relative'
+        relative.symlink_to(os.path.relpath(alias / 'skills/relative', directory))
+        regular = directory / 'user-file'
+        regular.write_text('keep user content')
+
+        self.install('--dry-run')
+        self.assertTrue(all(link.is_symlink() for link in owned))
+        self.install()
+        self.assertTrue(all(not link.is_symlink() for link in owned))
+        for link in (other_checkout, wrong_name, wrong_directory, relative):
+            self.assertTrue(link.is_symlink(), str(link))
+        self.assertEqual(regular.read_text(), 'keep user content')
+
     def test_marketplace_conflict_preflight_preserves_links(self):
         link=self.legacy('claude')
         config=self.home/'codex';config.mkdir()
