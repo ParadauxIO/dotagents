@@ -5,7 +5,7 @@ and Codex. Author each skill once under `plugins/paradaux/skills/`; native plugi
 loading supplies the `paradaux:` namespace. Skill folder and frontmatter names stay
 short, such as `create-pr`, rather than containing a literal colon.
 
-The plugin contains nine skills and no hooks or bundled MCP servers. Optional
+The plugin contains ten skills and no hooks or bundled MCP servers. Optional
 shared MCP setup for Discord, GitHub, MariaDB Economy, Tasklie, Keycloak, Infisical,
 and headless Playwright remains independently managed by `mcp/install.py`.
 For agents launched by Paseo, see [Paseo tool setup](mcp/README.md#paseo-setup).
@@ -58,6 +58,7 @@ settings and caches; dotagents does not rewrite plugin registries by hand.
 | [paradaux:resolve-pr](plugins/paradaux/skills/resolve-pr/SKILL.md) | Fix actionable PR feedback and CI failures, tracking validation against the current commit. |
 | [paradaux:systematic-debugging](plugins/paradaux/skills/systematic-debugging/SKILL.md) | Diagnose bugs, flaky tests, performance regressions, and cross-service failures with controlled experiments and verified repairs. |
 | [paradaux:debug-auth](plugins/paradaux/skills/debug-auth/SKILL.md) | Trace Keycloak login, session, and permission failures, including Infisical configuration mismatches. |
+| [paradaux:technical-writing](plugins/paradaux/skills/technical-writing/SKILL.md) | Write or review reader-focused technical documents while preserving facts, uncertainty, and technical literals. |
 | [paradaux:create-pr](plugins/paradaux/skills/create-pr/SKILL.md) | Create a PR with Why, How, Diagram, and Screenshots sections, attaching rendered diagrams and real screenshots with `gh`. |
 
 In Claude Code, invoke `/paradaux:start-work PAR-123` or

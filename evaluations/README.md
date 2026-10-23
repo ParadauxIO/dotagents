@@ -118,3 +118,6 @@ one instruction at a time when investigating a result. Retain a rule only when
 its demonstrated benefit justifies its context and maintenance cost. These tiny
 fixtures need follow-up trials on representative repository tasks before claims
 about broader effectiveness.
+
+[Technical-writing cases](technical-writing.md) retain original inputs, candidate
+outputs, semantic criteria, and the limits of a same-agent walkthrough.
